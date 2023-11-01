@@ -6,14 +6,16 @@ router = DefaultRouter()
 router.register(r'subjects', SubjectViewSet, basename='subject')
 router.register(r'exams', ExamViewSet, basename='exam')
 router.register(r'questions', QuestionViewSet, basename='question')
-router.register(r'question-assignments', QuestionAssignmentViewSet, basename='question-assignment')
-router.register(r'student_answers', StudentAnswerViewSet, basename='student-answer')
-router.register(r'exam_results', ExamResultViewSet, basename='exam-result')
+router.register(r'departments', DepartmentViewSet)
+
+# router.register(r'question-assignments', QuestionAssignmentViewSet, basename='question-assignment')
+
 
 urlpatterns = [
     path('login/', CustomLoginView.as_view(), name='custom_login'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('create_user/', CreateUserView.as_view(), name='create_user'),
+    path('question-assignments/<int:exam_id>/', QuestionAssignmentViewSet.as_view({'get': 'list'}), name='question-assignment'),
 ]
 
 urlpatterns += router.urls

@@ -191,33 +191,12 @@ class QuestionAssignmentViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = QuestionAssignmentSerializer
     
     def get_queryset(self):
-        # Filter by the logged-in student
-        return QuestionAssignment.objects.filter(student=self.request.user)
+        # Filter by the logged-in student and the provided exam id
+        exam_id = self.kwargs.get('exam_id')
+        return QuestionAssignment.objects.filter(student=self.request.user, exam__id=exam_id)
 
-class StudentAnswerViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+class DepartmentViewSet(viewsets.ModelViewSet):
+    queryset = Department.objects.all()
+    serializer_class = DepartmentSerializer
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-    serializer_class = StudentAnswerCreateSerializer
-    
-    def create(self, request, *args, **kwargs):
-        if isinstance(request.data, list):
-            serializer = self.get_serializer(data=request.data, many=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            return super(StudentAnswerViewSet, self).create(request, *args, **kwargs)
-    
-    def get_queryset(self):
-        return StudentAnswer.objects.filter(question_assignment__student=self.request.user)
-
-class ExamResultViewSet(viewsets.ModelViewSet):
-    queryset = ExamResult.objects.all()
-    serializer_class = ExamResultSerializer
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        # Filter by the logged-in student
-        return ExamResult.objects.filter(student=self.request.user)
+    permission_classes = [IsAuthenticated]  

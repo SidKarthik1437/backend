@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Department, User, Subject, Question, Exam, QuestionAssignment, StudentAnswer, Choice, ExamResult
+from .models import Department, User, Subject, Question, Exam, QuestionAssignment, Choice
 
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -10,20 +10,22 @@ class UserSerializer(serializers.ModelSerializer):
     department = DepartmentSerializer()
     class Meta:
         model = User
-        fields = ['usn', 'name', 'department','semester']
+        fields = ['usn', 'name', 'department','semester','role']
         
 class SubjectSerializer(serializers.ModelSerializer):
+    
+    department = DepartmentSerializer()
     class Meta:
         model = Subject
-        fields = '__all__'
+        fields = ['id', 'name', 'department', 'semester' ]
 
 class ChoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Choice
-        fields = ['label', 'content']
+        fields = ['label', 'content', 'is_correct']
 
 class QuestionSerializer(serializers.ModelSerializer):
-    choices = ChoiceSerializer(many=True, read_only=True)
+    choices = ChoiceSerializer(many=True)
     
     class Meta:
         model = Question
@@ -35,6 +37,18 @@ class QuestionSerializer(serializers.ModelSerializer):
         for choice_data in choices_data:
             Choice.objects.create(question=question, **choice_data)
         return question
+    
+    def to_representation(self, instance):
+        # Use the original representation
+        rep = super().to_representation(instance)
+        
+        # If the user is not an admin, remove the 'is_correct' attribute from each choice
+        if not self.context['request'].user.is_staff:
+            for choice in rep['choices']:
+                choice.pop('is_correct', None)
+        
+        return rep
+
 
 class ExamSerializer(serializers.ModelSerializer):
     subject = SubjectSerializer()  # Nested Serializer
@@ -59,34 +73,3 @@ class QuestionAssignmentSerializer(serializers.ModelSerializer):
         fields = ['id', 'exam', 'assigned_questions', 'student']  # Add more fields if needed
         
         
-class StudentAnswerSerializer(serializers.ModelSerializer):
-    selected_choices = serializers.PrimaryKeyRelatedField(
-    many=True,
-    queryset=Choice.objects.all()
-)
-    
-    class Meta:
-        model = StudentAnswer
-        fields = ['question', 'selected_choices']
-
-class StudentAnswerCreateSerializer(serializers.Serializer):
-    exam = serializers.IntegerField(write_only=True)
-    answers = StudentAnswerSerializer(many=True)
-    
-    def create(self, validated_data):
-        exam_id = validated_data.get('exam')
-        answers_data = validated_data.get('answers')
-        
-        question_assignment = QuestionAssignment.objects.get(exam_id=exam_id, student=self.context['request'].user)
-        
-        for answer_data in answers_data:
-            StudentAnswer.objects.create(
-                question_assignment=question_assignment,
-                **answer_data
-            )
-        return validated_data
-
-class ExamResultSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ExamResult
-        fields = ['id', 'student', 'exam', 'total_score', 'total_correct_answers', 'total_attempted']

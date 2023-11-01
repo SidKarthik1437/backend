@@ -123,7 +123,7 @@ class Question(models.Model):
     question_type = models.CharField(max_length=10, choices=QuestionType.choices, default=QuestionType.SINGLE)
 
     def __str__(self):
-        return self.text[:50]
+        return self.text
 
 
 class Choice(models.Model):
@@ -133,7 +133,7 @@ class Choice(models.Model):
     is_correct = models.BooleanField(default=False)
     
     def __str__(self):
-        return f"{self.question.text[:20]} - {self.label}"
+        return f"{self.question.text} - {self.label}"
     
 class Exam(models.Model):
     id = models.AutoField(primary_key=True)
@@ -201,44 +201,15 @@ class QuestionAssignment(models.Model):
     def __str__(self):
         return str(self.exam) +" || "+ (self.student.usn)
     
-class StudentAnswer(models.Model):
-    question_assignment = models.ForeignKey(QuestionAssignment, on_delete=models.CASCADE)
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    selected_choices = models.ManyToManyField(Choice, related_name='selected_answers')
-    is_correct = models.BooleanField(default=False)
-    
-    def save(self, *args, **kwargs):
-        self.is_correct = all(choice.is_correct for choice in self.selected_choices.all())
-        super().save(*args, **kwargs)
+# class StudentAnswer(models.Model):
+#     student = models.ForeignKey(User, on_delete=models.CASCADE)
+#     exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
+#     question = models.ForeignKey(Question, on_delete=models.CASCADE)
+#     selected_choices = models.ManyToManyField(Choice, related_name='selected_choices', blank=True)  # For multiple choice questions
 
-    def __str__(self):
-        return f"{self.question_assignment.student.usn} - {self.question.text[:50]}"
+#     def __str__(self):
+#         return f"{self.student.usn} - {self.question_assignment} - {self.question}"
 
-
-class ExamResult(models.Model):
-    student = models.ForeignKey(User, on_delete=models.CASCADE)
-    exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
-    total_score = models.IntegerField()
-    total_correct_answers = models.IntegerField()
-    total_attempted = models.IntegerField()
-
-    class Meta:
-        unique_together = ['student', 'exam']
-
-    def calculate_result(self):
-        student_answers = StudentAnswer.objects.filter(
-            question_assignment__student=self.student, 
-            question_assignment__exam=self.exam
-        )
-        self.total_correct_answers = student_answers.filter(is_correct=True).count()
-        self.total_attempted = student_answers.count()
-        self.total_score = self.total_correct_answers  # Modify as needed based on scoring rules
-        self.save()
-
-    def save(self, *args, **kwargs):
-        if not self.pk:  # Check if the object is being created
-            self.calculate_result()
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.student.usn} - {self.exam} - Score: {self.total_score}"
+#     def save(self, *args, **kwargs):
+#         # Ensure that either selected_choice or selected_choices is set, but not both.
+#         super().save(*args, **kwargs)
