@@ -14,10 +14,10 @@ class UserSerializer(serializers.ModelSerializer):
         
 class SubjectSerializer(serializers.ModelSerializer):
     
-    department = DepartmentSerializer()
+    department = serializers.PrimaryKeyRelatedField(queryset=Department.objects.all())
     class Meta:
         model = Subject
-        fields = ['id', 'name', 'department', 'semester' ]
+        fields = ['id', 'name', 'semester','department' ]
 
 class ChoiceSerializer(serializers.ModelSerializer):
     class Meta:
