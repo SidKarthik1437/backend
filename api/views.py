@@ -177,11 +177,31 @@ class QuestionViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         if isinstance(request.data, list):
-            serializer = self.get_serializer(data=request.data, many=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            # Process each question in the list
+            created_questions = []
+            for question_data in request.data:
+                question_text = question_data.get('text')
+                subject_id = question_data.get('subject')
+                choices = question_data.get('choices', [])
+                
+                # Check if a question with the same text and subject exists
+                existing_question = Question.objects.filter(
+                    text=question_text, subject_id=subject_id
+                ).first()
+
+                if existing_question:
+                    # Check if choices also match
+                    existing_choices = existing_question.choices.all()
+                    if all(choice['content'] in [ec.content for ec in existing_choices] for choice in choices):
+                        continue  # Skip this question as it's a duplicate
+
+                # If not a duplicate, create new question and choices
+                serializer = self.get_serializer(data=question_data)
+                if serializer.is_valid():
+                    serializer.save()
+                    created_questions.append(serializer.data)
+
+            return Response(created_questions, status=status.HTTP_201_CREATED)
         else:
             return super(QuestionViewSet, self).create(request, *args, **kwargs)
 

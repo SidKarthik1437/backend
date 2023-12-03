@@ -165,7 +165,8 @@ class Exam(models.Model):
                 print(students)
                 # Get the questions associated with this exam
                 questions = self.question_set.all()
-                
+                if questions.count() == 0:
+                    return
                 # Determine the number of questions to assign to each student
                 num_questions_per_student = self.totalQuestions  # Adjust as necessary
                 
