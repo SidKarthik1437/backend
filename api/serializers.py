@@ -4,7 +4,7 @@ from .models import Department, User, Subject, Question, Exam, QuestionAssignmen
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Department
-        fields = '__all__'
+        fields = ['id', 'name']
 
 class UserSerializer(serializers.ModelSerializer):
     department = DepartmentSerializer()
@@ -22,15 +22,20 @@ class SubjectSerializer(serializers.ModelSerializer):
 class ChoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Choice
-        fields = ['label', 'content', 'is_correct']
+        fields = ['label', 'content', 'is_correct', 'image']
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['image'] = instance.image.url if instance.image else None
+        return representation
 
 class QuestionSerializer(serializers.ModelSerializer):
     choices = ChoiceSerializer(many=True)
     
     class Meta:
         model = Question
-        fields = ['id', 'text', 'subject', 'created_by', 'exam', 'question_type', 'choices']
-        
+        fields = ['id', 'text', 'subject', 'created_by', 'exam', 'question_type', 'choices', 'image']
+    
     def create(self, validated_data):
         choices_data = validated_data.pop('choices')
         question = Question.objects.create(**validated_data)
@@ -39,15 +44,15 @@ class QuestionSerializer(serializers.ModelSerializer):
         return question
     
     def to_representation(self, instance):
-        # Use the original representation
-        rep = super().to_representation(instance)
-        
+        representation = super().to_representation(instance)
+        representation['image'] = instance.image.url if instance.image else None
         # If the user is not an admin, remove the 'is_correct' attribute from each choice
         if not self.context['request'].user.is_staff:
-            for choice in rep['choices']:
+            for choice in representation['choices']:
                 choice.pop('is_correct', None)
-        
-        return rep
+        return representation
+    
+    
 
 
 class ExamSerializer(serializers.ModelSerializer):

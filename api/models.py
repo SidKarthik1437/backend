@@ -117,6 +117,7 @@ class Question(models.Model):
         MULTIPLE = 'MULTIPLE', 'Multiple'
     
     text = models.TextField()
+    image = models.ImageField(upload_to='questions/', null=True, blank=True)
     subject = models.ForeignKey('Subject', on_delete=models.CASCADE)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     exam = models.ForeignKey('Exam', on_delete=models.CASCADE, null=True, blank=True)
@@ -130,6 +131,7 @@ class Choice(models.Model):
     question = models.ForeignKey(Question, related_name='choices', on_delete=models.CASCADE)
     label = models.CharField(max_length=1)  # A, B, C, D
     content = models.TextField()
+    image = models.ImageField(upload_to='choices/', null=True, blank=True)
     is_correct = models.BooleanField(default=False)
     
     def __str__(self):

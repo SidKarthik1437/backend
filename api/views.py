@@ -1,5 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.http import JsonResponse
 from rest_framework import status, viewsets, mixins
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import get_user_model
@@ -10,6 +11,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated, OR, AllowAny
 from .permissions import IsAdminUser, IsStudentUser
 from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser, JSONParser
 
 class CreateUserView(APIView):
     def post(self, request, *args, **kwargs):
@@ -36,8 +38,8 @@ class CreateUserView(APIView):
                 user = User.objects.create_user(usn=usn, name=name, dob=dob, role=role, password=request.data.get('password'))
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
-        return Response({'message': 'User created successfully', 'user_id': user.id, "role":user.role, "pass":user.password, "user": user}, status=status.HTTP_201_CREATED)
+        user = UserSerializer(user).data
+        return Response({'message': 'User created successfully', "user": user}, status=status.HTTP_201_CREATED)
 
 class CustomLoginView(APIView):
     def post(self, request, *args, **kwargs):
@@ -204,6 +206,29 @@ class QuestionViewSet(viewsets.ModelViewSet):
             return Response(created_questions, status=status.HTTP_201_CREATED)
         else:
             return super(QuestionViewSet, self).create(request, *args, **kwargs)
+        
+    # @action(detail=True, methods=['patch'], parser_classes=[MultiPartParser, JSONParser])
+    def partial_update(self, request, pk=None):
+        question = self.get_object()
+
+        # Handle multipart form-data
+        if isinstance(request.data, QueryDict):
+            data = request.data.dict()
+            image = data.pop('image', None)
+            if image:
+                question.image = image
+
+            # Update other fields
+            for key, value in data.items():
+                setattr(question, key, value)
+            question.save()
+
+            # Return the updated question
+            serializer = self.get_serializer(question)
+            return Response(serializer.data)
+        else:
+            return super(QuestionViewSet, self).partial_update(request, *args, **kwargs)
+        
 
 class QuestionAssignmentViewSet(viewsets.ReadOnlyModelViewSet):
     authentication_classes = [TokenAuthentication]
