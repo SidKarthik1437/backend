@@ -127,15 +127,22 @@ class Question(models.Model):
         return self.text
 
 
+from django.db import models
+
 class Choice(models.Model):
+    id = models.AutoField(primary_key=True)
     question = models.ForeignKey(Question, related_name='choices', on_delete=models.CASCADE)
     label = models.CharField(max_length=1)  # A, B, C, D
     content = models.TextField()
     image = models.ImageField(upload_to='choices/', null=True, blank=True)
     is_correct = models.BooleanField(default=False)
     
+    class Meta:
+        unique_together = ('question', 'label')
+    
     def __str__(self):
-        return f"{self.question.text} - {self.label}"
+        return f"{self.id} - {self.question.text} - {self.label}"
+
     
 class Exam(models.Model):
     id = models.AutoField(primary_key=True)

@@ -22,19 +22,32 @@ class SubjectSerializer(serializers.ModelSerializer):
 class ChoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Choice
-        fields = ['label', 'content', 'is_correct', 'image']
+        fields = ['id', 'label', 'content', 'is_correct', 'image']
+        
+    def create(self, validated_data):
+        label = validated_data.get('label')
+        if label is None:
+            # Handle the case where 'label' is not provided in the data
+            raise serializers.ValidationError("Label is required for a choice.")
+
+        choices_data = validated_data.pop('choices')
+        choice = Choice.objects.create(**validated_data)
+        for choice_data in choices_data:
+            Choice.objects.create(question=choice, **choice_data)
+        return choice
     
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         representation['image'] = instance.image.url if instance.image else None
+        representation['id'] = instance.id
         return representation
 
 class QuestionSerializer(serializers.ModelSerializer):
     choices = ChoiceSerializer(many=True)
-    
+
     class Meta:
         model = Question
-        fields = ['id', 'text', 'subject', 'created_by', 'exam', 'question_type', 'choices', 'image']
+        fields = ['id', 'text', 'subject', 'created_by', 'image', 'exam', 'question_type', 'choices']
     
     def create(self, validated_data):
         choices_data = validated_data.pop('choices')
@@ -42,6 +55,24 @@ class QuestionSerializer(serializers.ModelSerializer):
         for choice_data in choices_data:
             Choice.objects.create(question=question, **choice_data)
         return question
+    
+    def update(self, instance, validated_data):
+        choices_data = validated_data.pop('choices', [])
+
+        # Update question fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Update or create choices
+        for choice_data in choices_data:
+            label = choice_data.get('label')
+            choice, created = Choice.objects.update_or_create(
+                question=instance, label=label, 
+                defaults=choice_data
+            )
+
+        return instance
     
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -51,7 +82,6 @@ class QuestionSerializer(serializers.ModelSerializer):
             for choice in representation['choices']:
                 choice.pop('is_correct', None)
         return representation
-    
     
 
 

@@ -12,6 +12,10 @@ from rest_framework.permissions import IsAuthenticated, OR, AllowAny
 from .permissions import IsAdminUser, IsStudentUser
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, JSONParser
+from django.core.files.base import ContentFile
+import base64
+import uuid
+
 
 class CreateUserView(APIView):
     def post(self, request, *args, **kwargs):
@@ -186,7 +190,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 subject_id = question_data.get('subject')
                 choices = question_data.get('choices', [])
                 
-                # Check if a question with the same text and subject exists
+                # Check if a question with the same text, subject, and choices exists
                 existing_question = Question.objects.filter(
                     text=question_text, subject_id=subject_id
                 ).first()
@@ -194,41 +198,49 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 if existing_question:
                     # Check if choices also match
                     existing_choices = existing_question.choices.all()
-                    if all(choice['content'] in [ec.content for ec in existing_choices] for choice in choices):
+                    if all(
+                        choice_data in existing_choices
+                        for choice_data in choices
+                    ):
                         continue  # Skip this question as it's a duplicate
 
-                # If not a duplicate, create new question and choices
+                # If not a duplicate, create a new question and choices
                 serializer = self.get_serializer(data=question_data)
                 if serializer.is_valid():
                     serializer.save()
-                    created_questions.append(serializer.data)
+                    created_question = serializer.data
+
+                    # Include Choice IDs in the response
+                    question_instance = Question.objects.get(pk=created_question['id'])
+                    choices = ChoiceSerializer(question_instance.choices.all(), many=True).data
+                    created_question['choices'] = choices
+
+                    created_questions.append(created_question)
+                else:
+                    print(serializer.errors)
 
             return Response(created_questions, status=status.HTTP_201_CREATED)
         else:
             return super(QuestionViewSet, self).create(request, *args, **kwargs)
-        
+    
     # @action(detail=True, methods=['patch'], parser_classes=[MultiPartParser, JSONParser])
-    def partial_update(self, request, pk=None):
-        question = self.get_object()
-
-        # Handle multipart form-data
-        if isinstance(request.data, QueryDict):
-            data = request.data.dict()
-            image = data.pop('image', None)
-            if image:
-                question.image = image
-
-            # Update other fields
-            for key, value in data.items():
-                setattr(question, key, value)
-            question.save()
-
-            # Return the updated question
-            serializer = self.get_serializer(question)
-            return Response(serializer.data)
-        else:
-            return super(QuestionViewSet, self).partial_update(request, *args, **kwargs)
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        print(request.data)
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
         
+        if serializer.is_valid():
+            serializer.save()
+            updated_instance = serializer.instance
+            # Include Choice IDs in the response
+            choices = ChoiceSerializer(updated_instance.choices.all(), many=True).data
+            updated_data = serializer.data
+            updated_data['choices'] = choices
+            return Response(updated_data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 class QuestionAssignmentViewSet(viewsets.ReadOnlyModelViewSet):
     authentication_classes = [TokenAuthentication]
@@ -245,3 +257,39 @@ class DepartmentViewSet(viewsets.ModelViewSet):
     serializer_class = DepartmentSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]  
+    
+class ChoiceViewSet(viewsets.ModelViewSet):
+    queryset = Choice.objects.all()
+    serializer_class = ChoiceSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def list(self, request, *args, **kwargs):
+        queryset = Choice.objects.all()
+        serializer = ChoiceSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = ChoiceSerializer(instance)
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        serializer = ChoiceSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = ChoiceSerializer(instance, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
