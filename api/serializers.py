@@ -14,6 +14,7 @@ class UserSerializer(serializers.ModelSerializer):
         
 class SubjectSerializer(serializers.ModelSerializer):
     
+    # department = serializers.PrimaryKeyRelatedField(queryset=Department.objects.all())
     department = serializers.PrimaryKeyRelatedField(queryset=Department.objects.all())
     class Meta:
         model = Subject
@@ -86,8 +87,8 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 
 class ExamSerializer(serializers.ModelSerializer):
-    subject = SubjectSerializer()  # Nested Serializer
-    department = DepartmentSerializer()  # Nested Serializer
+    subject = serializers.PrimaryKeyRelatedField(queryset=Subject.objects.all())
+    department = serializers.PrimaryKeyRelatedField(queryset=Department.objects.all())
     class Meta:
         model = Exam
         # fields = ['id', 'subject', 'department', 'start_time', 'end_time', 'semester', 'duration']

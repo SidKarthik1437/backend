@@ -6,15 +6,16 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         departments = [
-            {'id': 1, 'name': 'ai&ds'},
-            {'id': 2, 'name': 'ai&ml'},
-            {'id': 3, 'name': 'cse'},
-            {'id': 4, 'name': 'ise'},
-            {'id': 5, 'name': 'ece'},
-            {'id': 6, 'name': 'eee'},
-            {'id': 7, 'name': 'ae'},
-            {'id': 8, 'name': 'me'},
-        ]
+                    {'id': 1, 'name': 'Artificial Intelligence and Data Science'},
+                    {'id': 2, 'name': 'Artificial Intelligence and Machine Learning'},
+                    {'id': 3, 'name': 'Computer Science and Engineering'},
+                    {'id': 4, 'name': 'Information Science and Engineering'},
+                    {'id': 5, 'name': 'Electronics and Communication Engineering'},
+                    {'id': 6, 'name': 'Electrical and Electronics Engineering'},
+                    {'id': 7, 'name': 'Aerospace Engineering'},
+                    {'id': 8, 'name': 'Mechanical Engineering'},
+                ]
+
 
         for dept_data in departments:
             department = Department(**dept_data)

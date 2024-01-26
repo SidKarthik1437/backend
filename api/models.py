@@ -59,7 +59,7 @@ class CustomUserManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
 
-        return self.create_user(usn, password, **extra_fields)
+        return self.create_user(usn, password, role=User.Role.ADMIN, **extra_fields)
     
 class User(AbstractUser):
     class Role(models.TextChoices):
@@ -68,7 +68,7 @@ class User(AbstractUser):
         
     base_role = Role.ADMIN
 
-    usn = models.CharField(max_length=10, unique=True)
+    usn = models.CharField(max_length=10, unique=True, primary_key=True )
     name = models.CharField(max_length=50)
     department = models.ForeignKey(Department, on_delete=models.CASCADE, null=True, blank=True, default=None)
     role = models.CharField(max_length=10, choices=Role.choices, default=base_role)
@@ -147,11 +147,11 @@ class Choice(models.Model):
 class Exam(models.Model):
     id = models.AutoField(primary_key=True)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
-    start_time = models.DateTimeField(null=False, blank=False)
-    end_time = models.DateTimeField(null=False, blank=False)
+    start_time = models.DateTimeField(null=True)
+    end_time = models.DateTimeField(null=True)
     department = models.ForeignKey('Department', on_delete=models.CASCADE)
-    semester = models.IntegerField(null=False, blank=False)
-    duration = models.DurationField(null=False, blank=False)
+    semester = models.IntegerField(null=True)
+    duration = models.DurationField(null=True)
     totalQuestions = models.IntegerField(null=True, blank=True)
     totalMarks = models.IntegerField(null=True, blank=False)
     negativeMarks = models.IntegerField(null=True, blank=True)

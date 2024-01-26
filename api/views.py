@@ -24,7 +24,7 @@ class CreateUserView(APIView):
         usn = request.data.get('usn')
         name = request.data.get('name')
         dob = request.data.get('dob')
-        role = request.data.get('role', User.Role.STUDENT)  # Default to STUDENT if role is not provided
+        role = request.data.get('role')  # Default to STUDENT if role is not provided
         
         if not usn or not name or not dob:
             return Response({'error': 'USN, Name, and DOB are required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -37,7 +37,7 @@ class CreateUserView(APIView):
         
         try:
             if role == User.Role.STUDENT:
-                user = User.objects.create_student(usn=usn, name=name, dob=dob, role=role)
+                user = User.objects.create_user(usn=usn, name=name, dob=dob, role=role)
             else:
                 user = User.objects.create_user(usn=usn, name=name, dob=dob, role=role, password=request.data.get('password'))
         except ValueError as e:
@@ -130,6 +130,39 @@ class ExamViewSet(viewsets.ModelViewSet):
     queryset = Exam.objects.all()
     serializer_class = ExamSerializer
     authentication_classes = [TokenAuthentication]
+    
+    def create(self, request, *args, **kwargs):
+        # Ensure that only ADMIN users can create exams
+        if not request.user.role == User.Role.ADMIN:
+            return Response({"detail": "Only ADMIN users can create exams."}, status=status.HTTP_403_FORBIDDEN)
+        # Deserialize the request data
+        # usn = request.data.get("created_by")
+        # try:
+        #     user = User.objects.get(usn=usn)
+        #     # print(user.id)
+        # except User.DoesNotExist:
+        #     return Response({"detail": "User with USN {} does not exist.".format(usn)}, status=status.HTTP_404_NOT_FOUND)
+
+        # Deserialize the request data
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Create the exam object with the provided data and the retrieved user
+        exam = Exam(
+            start_time=serializer.validated_data["start_time"],
+            end_time=serializer.validated_data["end_time"],
+            negativeMarks=serializer.validated_data["negativeMarks"],
+            marksPerQuestion=serializer.validated_data["marksPerQuestion"],
+            passingMarks=serializer.validated_data["passingMarks"],
+            created_by=serializer.validated_data['created_by'],  # Set the created_by field to the retrieved user
+            department=serializer.validated_data["department"],
+            subject=serializer.validated_data["subject"]
+        )
+
+        # Save the exam object
+        exam.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
     
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
