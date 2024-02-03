@@ -156,7 +156,10 @@ class ExamViewSet(viewsets.ModelViewSet):
             passingMarks=serializer.validated_data["passingMarks"],
             created_by=serializer.validated_data['created_by'],  # Set the created_by field to the retrieved user
             department=serializer.validated_data["department"],
-            subject=serializer.validated_data["subject"]
+            subject=serializer.validated_data["subject"],
+            semester=serializer.validated_data["semester"],
+            duration=serializer.validated_data["duration"],
+            is_published=serializer.validated_data.get("is_published", False)
         )
 
         # Save the exam object

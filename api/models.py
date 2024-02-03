@@ -197,7 +197,7 @@ class Exam(models.Model):
             super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.subject}_{self.department}_{self.semester}"
+        return f"{self.id}_{self.subject}_{self.department}_{self.semester}"
 
     
     
