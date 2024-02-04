@@ -37,7 +37,7 @@ class CreateUserView(APIView):
         
         try:
             if role == User.Role.STUDENT:
-                user = User.objects.create_user(usn=usn, name=name, dob=dob, role=role)
+                user = User.objects.create_user(usn=usn, name=name, dob=dob, role=role, semester=request.data.get('semester'), department=request.data.get('department'), password=request.data.get('password'))
             else:
                 user = User.objects.create_user(usn=usn, name=name, dob=dob, role=role, password=request.data.get('password'))
         except ValueError as e:
