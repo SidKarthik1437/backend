@@ -86,14 +86,21 @@ class QuestionSerializer(serializers.ModelSerializer):
     
 
 
-class ExamSerializer(serializers.ModelSerializer):
+class AdminExamSerializer(serializers.ModelSerializer):
     subject = serializers.PrimaryKeyRelatedField(queryset=Subject.objects.all())
     department = serializers.PrimaryKeyRelatedField(queryset=Department.objects.all())
+
     class Meta:
         model = Exam
-        # fields = ['id', 'subject', 'department', 'start_time', 'end_time', 'semester', 'duration']
         fields = ['id', 'subject', 'start_time', 'end_time', 'department', 'semester', 'duration', 'totalQuestions', 'totalMarks', 'negativeMarks', 'passingMarks', 'created_by', 'marksPerQuestion', 'is_published', 'datetime_published']
 
+class StudentExamSerializer(serializers.ModelSerializer):
+    subject = SubjectSerializer()
+    department = DepartmentSerializer()
+
+    class Meta:
+        model = Exam
+        fields = ['id', 'subject', 'start_time', 'end_time', 'department', 'semester', 'duration', 'is_published', 'datetime_published']
 
 # class QuestionAssignmentSerializer(serializers.ModelSerializer):
 #     assigned_questions = serializers.PrimaryKeyRelatedField(many=True, queryset=Question.objects.all())
