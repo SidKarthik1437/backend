@@ -124,7 +124,7 @@ class Question(models.Model):
     question_type = models.CharField(max_length=10, choices=QuestionType.choices, default=QuestionType.SINGLE)
 
     def __str__(self):
-        return self.text
+        return str(self.id) + "_" +self.text
 
 
 from django.db import models
@@ -212,7 +212,7 @@ class QuestionAssignment(models.Model):
     def __str__(self):
         return str(self.exam) +" || "+ (self.student.usn)
     
-class StudentResponse(models.Model):
+class StudentAnswers(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE)
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
     question = models.ForeignKey(Question, on_delete=models.CASCADE)

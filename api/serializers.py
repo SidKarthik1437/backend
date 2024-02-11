@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Department, User, Subject, Question, Exam, QuestionAssignment, Choice
+from .models import Department, User, Subject, Question, Exam, QuestionAssignment, Choice, StudentAnswers,Result
 
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -116,3 +116,12 @@ class QuestionAssignmentSerializer(serializers.ModelSerializer):
         fields = ['id', 'exam', 'assigned_questions', 'student']  # Add more fields if needed
         
         
+class StudentAnswersSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentAnswers
+        fields = ['id', 'exam', 'student', 'question', 'selected_choices', 'is_correct']
+
+class ResultSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Result
+        fields = ['id', 'exam', 'student', 'studentMarks', 'totalMarks']
