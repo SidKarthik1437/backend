@@ -15,6 +15,10 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 from django.core.files.base import ContentFile
 import base64
 import uuid
+from django.views.decorators.csrf import csrf_exempt
+import json
+from rest_framework.decorators import api_view
+
 
 
 class CreateUserView(APIView):
@@ -329,3 +333,61 @@ class ChoiceViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['POST', "GET"])
+def submit_answers(request):
+    data = request.data
+    user_responses = data.get('answers', [])
+    exam_id = data.get('exam_id', None)
+
+    if not exam_id:
+        return JsonResponse({'error': 'Exam ID not provided'})
+    
+    student = request.user  # Assuming your authentication is set up properly
+    # Evaluate the user responses and calculate the score
+    score = 0
+    user_scored_answers = {}
+    for user_response in user_responses:
+        question_id = user_response.get('question_id')
+        selected_choice_ids = user_response.get('selected_choices', [])
+        try:
+            question = Question.objects.get(pk=question_id)
+        except Question.DoesNotExist:
+            return JsonResponse({'error': f'Question with ID {question_id} does not exist'})
+        selected_choices = Choice.objects.filter(id__in=selected_choice_ids)
+        # Check if the selected choices are correct for the question
+        is_correct = set(selected_choices) == set(question.choices.filter(is_correct=True))
+        # Calculate marks for the question based on correctness
+        marks_for_question = (
+            question.exam.marksPerQuestion if is_correct else -question.exam.negativeMarks
+        )
+        # Save the user response in the database
+        response = StudentResponse.objects.create(
+            student=student,
+            exam_id=exam_id,
+            question=question,
+            selected_choices=selected_choices,
+            is_correct=is_correct,
+        )
+        response.save()
+
+        score += marks_for_question
+        user_scored_answers[question_id] = {
+            'is_correct': is_correct,
+            'marks_for_question': marks_for_question,
+        }
+    # Save the overall score in the Result model
+    exam = Exam.objects.get(pk=exam_id)
+    result, created = Result.objects.get_or_create(
+        student=student,
+        exam=exam,
+    )
+    result.totalMarks = exam.totalMarks
+    result.studentMarks = score
+    result.save()
+    # Send the evaluation results to the frontend
+    response_data = {
+        'score': score,
+        'userScoredAnswers': user_scored_answers,
+    }
+    return JsonResponse(response_data)

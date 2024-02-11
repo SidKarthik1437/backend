@@ -211,15 +211,29 @@ class QuestionAssignment(models.Model):
     def __str__(self):
         return str(self.exam) +" || "+ (self.student.usn)
     
-# class StudentAnswer(models.Model):
-#     student = models.ForeignKey(User, on_delete=models.CASCADE)
-#     exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
-#     question = models.ForeignKey(Question, on_delete=models.CASCADE)
-#     selected_choices = models.ManyToManyField(Choice, related_name='selected_choices', blank=True)  # For multiple choice questions
+class StudentResponse(models.Model):
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    selected_choices = models.ManyToManyField(Choice, related_name='selected_choices', blank=True)  # For multiple choice questions
+    is_correct = models.BooleanField(default=False)
 
-#     def __str__(self):
-#         return f"{self.student.usn} - {self.question_assignment} - {self.question}"
+    # marksPerQuestion = models.IntegerField(null=True, blank=True)
+    # negativeMarks = models.IntegerField(null=True, blank=True)
 
-#     def save(self, *args, **kwargs):
-#         # Ensure that either selected_choice or selected_choices is set, but not both.
-#         super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.student.usn} - {self.question_assignment} - {self.question}"
+
+    def save(self, *args, **kwargs):
+        # Ensure that either selected_choice or selected_choices is set, but not both.
+        super().save(*args, **kwargs)
+    
+class Result(models.Model):
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
+    totalMarks = models.IntegerField(null=True, blank=False)
+    studentMarks = models.IntegerField(null=True, blank=False)
+
+    def __str__(self) -> str:
+        return f"Result of {self.student.usn} for Exam {self.exam}"

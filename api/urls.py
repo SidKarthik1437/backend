@@ -17,6 +17,7 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(), name='logout'),
     path('create_user/', CreateUserView.as_view(), name='create_user'),
     path('question-assignments/<int:exam_id>/', QuestionAssignmentViewSet.as_view({'get': 'list'}), name='question-assignment'),
+    path('submit-answers/', submit_answers, name='submit_answers'),
 ]
 
 urlpatterns += router.urls
