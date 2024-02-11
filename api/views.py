@@ -93,47 +93,54 @@ class SubjectViewSet(viewsets.ModelViewSet):
     queryset = Subject.objects.all()
     serializer_class = SubjectSerializer
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated, IsAdminUser]  # Only Admin can perform CRUD
-    
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:  # Allow all users to list and retrieve
+            permission_classes = [IsAuthenticated]
+        else:  # Admin required for other actions
+            permission_classes = [IsAuthenticated, IsAdminUser]
+        return [permission() for permission in permission_classes]
+
     def list(self, request, *args, **kwargs):
-        # List all subjects
-        queryset = Subject.objects.all()
-        serializer = SubjectSerializer(queryset, many=True)
+        queryset = self.filter_queryset(self.get_queryset())  # Use filtered queryset
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-    
+
     def retrieve(self, request, *args, **kwargs):
-        # Retrieve a single subject
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
-        # Create a new subject
         serializer = SubjectSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     def update(self, request, *args, **kwargs):
-        # Update a subject
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     def destroy(self, request, *args, **kwargs):
-        # Delete a subject
         instance = self.get_object()
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 class ExamViewSet(viewsets.ModelViewSet):
     queryset = Exam.objects.all()
-    serializer_class = ExamSerializer
     authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    
+    def get_serializer_class(self):
+        if self.request.user.is_staff:  # Assuming staff users are admins
+            return AdminExamSerializer
+        return StudentExamSerializer
     
     def create(self, request, *args, **kwargs):
         # Ensure that only ADMIN users can create exams
