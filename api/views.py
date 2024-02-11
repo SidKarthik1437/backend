@@ -1,26 +1,16 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.http import JsonResponse
-from rest_framework import status, viewsets, mixins
+from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import get_user_model
 from datetime import datetime
 from .models import *
 from .serializers import *
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated, OR, AllowAny
+from rest_framework.permissions import IsAuthenticated
 from .permissions import IsAdminUser, IsStudentUser
-from rest_framework.decorators import action
-from rest_framework.parsers import MultiPartParser, JSONParser
-from django.core.files.base import ContentFile
-import base64
-import uuid
-from django.views.decorators.csrf import csrf_exempt
-import json
-from rest_framework.decorators import api_view
 from rest_framework.views import APIView
-
-
+from django.db.models import Subquery
 class CreateUserView(APIView):
     def post(self, request, *args, **kwargs):
         User = get_user_model()
@@ -207,12 +197,14 @@ class ExamViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.Role.STUDENT:
-            # Assuming QuestionAssignment has a ForeignKey to Exam and User
-            return Exam.objects.filter(questionassignment__student=user).distinct()
+            # Subquery to get the exams the student has attempted
+            attempted_exams = Result.objects.filter(student=user).values('exam')
+            # Filter the exams queryset to exclude attempted exams
+            return Exam.objects.exclude(id__in=Subquery(attempted_exams))
         elif user.role == User.Role.ADMIN:
-            return Exam.objects.all()  # or any other filtering logic for admin
+            return Exam.objects.all()
         else:
-            return Exam.objects.none()  # or any other default behaviour
+            return Exam.objects.none()
 
 
 class QuestionViewSet(viewsets.ModelViewSet):
@@ -371,7 +363,8 @@ class StudentAnswers(APIView):
                 return Response({'error': f'Question with ID {question_id} does not exist'}, status=status.HTTP_400_BAD_REQUEST)
             choices = Choice.objects.filter(question=question_id, is_correct=True)
             correct_choices = [c.id for c in choices]
-            print(set(selected_choice_ids) == set(correct_choices))
+            # print(set(selected_choice_ids) == set(correct_choices))
+            print((correct_choices))
 
             # Use the serializer to create the StudentAnswers instance
             serializer = StudentAnswersSerializer(data={
@@ -411,6 +404,8 @@ class StudentAnswers(APIView):
         # Send the evaluation results to the frontend
         response_data = {
             'score': score,
-            'userScoredAnswers': user_scored_answers,
+            # 'userScoredAnswers': user_scored_answers,
+            'totalMarks': exam.totalQuestions * exam.marksPerQuestion,
+            'passingMarks': exam.passingMarks,
         }
         return Response(response_data, status=status.HTTP_200_OK)

@@ -224,7 +224,7 @@ class StudentAnswers(models.Model):
 
 
     def __str__(self):
-        return f"{self.student.usn} - {self.question_assignment} - {self.question}"
+        return f"{self.student.usn} - {self.question} - {self.question}"
 
     def save(self, *args, **kwargs):
         # Ensure that either selected_choice or selected_choices is set, but not both.
