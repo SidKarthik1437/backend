@@ -160,7 +160,9 @@ class ExamViewSet(viewsets.ModelViewSet):
             subject=serializer.validated_data["subject"],
             semester=serializer.validated_data["semester"],
             duration=serializer.validated_data["duration"],
-            is_published=serializer.validated_data.get("is_published", False)
+            is_published=serializer.validated_data.get("is_published", False),
+            totalQuestions=serializer.validated_data["totalQuestions"],
+            totalMarks=serializer.validated_data["totalMarks"]
         )
 
         # Save the exam object
@@ -339,21 +341,32 @@ class StudentAnswers(APIView):
         user_responses = data.get('answers', [])
         exam_id = data.get('exam_id', None)
 
-        # print(user_responses)
-
+        print(user_responses)
+# 
+        student = request.user  # Assuming your authentication is set up properly
+        exam = Exam.objects.get(pk=exam_id)
+        
         if not exam_id:
             return Response({'error': 'Exam ID not provided'}, status=status.HTTP_400_BAD_REQUEST)
+        if Result.objects.filter(student=student, exam=exam).exists():
+            res = Result.objects.filter(student=student, exam=exam)
+            return Response({'error': 'You have already attempted this exam', 'score': score,
+            'totalMarks': res.totalQuestions * res.marksPerQuestion,
+            'passingMarks': res.passingMarks,}, status=status.HTTP_200_OK)
+        # if not user_responses == []:
+        #     return Response({
+        #     'score': 0,
+        #     'totalMarks': exam.totalQuestions * exam.marksPerQuestion,
+        #     'passingMarks': exam.passingMarks,
+        # }, status=status.HTTP_200_OK)
         
-        student = request.user  # Assuming your authentication is set up properly
 
-        # Evaluate the user responses and calculate the score
         score = 0
         user_scored_answers = {}
         for user_response in user_responses:
             question_id = user_response.get('question_id')
             selected_choice_ids = user_response.get('selected_choices', [])
 
-            exam = Exam.objects.get(pk=exam_id)
             
 
             # print(selected_choice_ids)
