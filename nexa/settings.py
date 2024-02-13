@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure--_gw$(hm-08bfe#8_n6(oa!yv%b0h=d3s33a(vzo_*wy-%!f67
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.248.207', '192.168.248.111', '0.0.0.0']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.248.207', '192.168.248.111', '0.0.0.0', 'nexa-server.azurewebsites.net']
 
 
 # Application definition
