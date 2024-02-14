@@ -1,7 +1,6 @@
 from djongo import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.exceptions import ValidationError
-import jsonfield
 from django.contrib.auth.models import Group
 import random
 from django.db import models, transaction
