@@ -92,7 +92,7 @@ class AdminExamSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Exam
-        fields = ['id', 'subject', 'start_time', 'end_time', 'department', 'semester', 'duration', 'totalQuestions', 'totalMarks', 'negativeMarks', 'passingMarks', 'created_by', 'marksPerQuestion', 'is_published', 'datetime_published']
+        fields = ['id', 'subject', 'start_time', 'end_time', 'department', 'semester', 'duration', 'totalQuestions', 'totalMarks', 'negativeMarks', 'passingMarks', 'created_by', 'marksPerQuestion', 'is_published', 'datetime_published', 'status']
 
 class StudentExamSerializer(serializers.ModelSerializer):
     subject = SubjectSerializer()

@@ -144,6 +144,12 @@ class Choice(models.Model):
 
     
 class Exam(models.Model):
+    STATUS_CHOICES = [
+        ('CREATED', 'Created'),
+        ('PUBLISHED', 'Published'),
+        ('STARTED', 'Started'),
+        ('ENDED', 'Ended')
+    ]
     id = models.AutoField(primary_key=True)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     start_time = models.DateTimeField(null=True)
@@ -159,6 +165,7 @@ class Exam(models.Model):
     marksPerQuestion = models.IntegerField(null=True, blank=True)
     is_published = models.BooleanField(default=False)
     datetime_published = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='CREATED')
 
     
     def save(self, *args, **kwargs):            
