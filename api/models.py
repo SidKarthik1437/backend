@@ -159,10 +159,17 @@ class Exam(models.Model):
     marksPerQuestion = models.IntegerField(null=True, blank=True)
     is_published = models.BooleanField(default=False)
     datetime_published = models.DateTimeField(null=True, blank=True)
+
     
-    def save(self, *args, **kwargs):
-        # Check if is_published is set to True and if this is the first time publishing
+    def save(self, *args, **kwargs):            
+    
+    # Update the status based on start time and end time
+        if self.start_time and self.start_time <= timezone.now() <= self.end_time:
+            self.status = 'STARTED'
+        if self.end_time and timezone.now() > self.end_time:
+            self.status = 'ENDED'
         if self.is_published == True :
+            self.status = 'PUBLISHED'
             print("assigning questions!")
             with transaction.atomic():  # Ensure atomicity for the whole operation
                 self.datetime_published = timezone.now()  # Set the time when the exam is published
@@ -195,10 +202,21 @@ class Exam(models.Model):
                     
         else:
             super().save(*args, **kwargs)
+            
+    def is_ongoing(self):
+        return self.start_time <= timezone.now() <= self.end_time
+
+    def has_ended(self):
+        return timezone.now() > self.end_time
 
     def __str__(self):
         return f"{self.id}_{self.subject}_{self.department}_{self.semester}"
 
+class ExamSession(models.Model):
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    start_time = models.DateTimeField(auto_now_add=True)
+    end_time = models.DateTimeField(null=True, blank=True)
     
     
 class QuestionAssignment(models.Model):

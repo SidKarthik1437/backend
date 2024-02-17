@@ -4,4 +4,4 @@ from .models import *
 # class ChoiceAdmin(admin.ModelAdmin):
 #     readonly_fields = ('id',)
 
-admin.site.register([User, Department, Subject, Question, Exam, QuestionAssignment, Choice, StudentAnswers,Result])
+admin.site.register([User, Department, Subject, Question, Exam, QuestionAssignment, Choice, StudentAnswers,Result, ExamSession])

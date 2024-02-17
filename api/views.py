@@ -11,6 +11,8 @@ from rest_framework.permissions import IsAuthenticated
 from .permissions import IsAdminUser, IsStudentUser
 from rest_framework.views import APIView
 from django.db.models import Subquery
+from rest_framework.decorators import action
+from django.shortcuts import get_object_or_404
 class CreateUserView(APIView):
     def post(self, request, *args, **kwargs):
         User = get_user_model()
@@ -137,14 +139,6 @@ class ExamViewSet(viewsets.ModelViewSet):
         if not request.user.role == User.Role.ADMIN:
             return Response({"detail": "Only ADMIN users can create exams."}, status=status.HTTP_403_FORBIDDEN)
         # Deserialize the request data
-        # usn = request.data.get("created_by")
-        # try:
-        #     user = User.objects.get(usn=usn)
-        #     # print(user.id)
-        # except User.DoesNotExist:
-        #     return Response({"detail": "User with USN {} does not exist.".format(usn)}, status=status.HTTP_404_NOT_FOUND)
-
-        # Deserialize the request data
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -171,7 +165,7 @@ class ExamViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
+        if self.action in ['list', 'retrieve', 'start_session', 'end_session']:
             # Using | (OR) operator to allow either students or admin
             self.permission_classes = [IsAuthenticated & (IsStudentUser | IsAdminUser)]
         else:  # For 'create', 'update', 'partial_update', 'destroy'
@@ -201,12 +195,41 @@ class ExamViewSet(viewsets.ModelViewSet):
         if user.role == User.Role.STUDENT:
             # Subquery to get the exams the student has attempted
             attempted_exams = Result.objects.filter(student=user).values('exam')
-            # Filter the exams queryset to exclude attempted exams
-            return Exam.objects.exclude(id__in=Subquery(attempted_exams))
+            # Filter the exams queryset to exclude attempted exams and those whose end time has passed
+            now = timezone.now()
+            return Exam.objects.exclude(id__in=Subquery(attempted_exams)).filter(end_time__gt=now)
         elif user.role == User.Role.ADMIN:
             return Exam.objects.all()
         else:
             return Exam.objects.none()
+    
+    @action(detail=True, methods=['post'])
+    def start_session(self, request, pk=None):
+        exam = self.get_object()
+        
+        if exam.has_ended():
+            return Response({"status": 0, "detail": "This exam has ended."}, status=status.HTTP_200_OK)
+        if not exam.is_ongoing():
+            return Response({"detail": "This exam has not started yet."}, status=status.HTTP_200_OK)
+        if ExamSession.objects.filter(exam=exam, student=request.user, end_time=None).exists():
+            return Response({"detail": "You already have an active session for this exam."}, status=status.HTTP_400_BAD_REQUEST)
+        session = ExamSession.objects.create(exam=exam, student=request.user)
+        return Response({"detail": "Exam session started successfully.", "session_id": session.id})
+
+    @action(detail=True, methods=['post'])
+    def end_session(self, request, pk=None):
+        exam = self.get_object()
+        session = get_object_or_404(ExamSession, exam=exam, student=request.user, end_time=None)
+        session.end_time = timezone.now()
+        session.save()
+        return Response({"detail": "Exam session ended successfully."})
+
+    @action(detail=True, methods=['get'])
+    def active_sessions(self, request, pk=None):
+        exam = self.get_object()
+        active_sessions = ExamSession.objects.filter(exam=exam, end_time=None)
+        serializer = ExamSessionSerializer(active_sessions, many=True)
+        return Response(serializer.data)
 
 
 class QuestionViewSet(viewsets.ModelViewSet):
@@ -353,12 +376,20 @@ class StudentAnswers(APIView):
             return Response({'error': 'You have already attempted this exam', 'score': score,
             'totalMarks': res.totalQuestions * res.marksPerQuestion,
             'passingMarks': res.passingMarks,}, status=status.HTTP_200_OK)
-        # if not user_responses == []:
-        #     return Response({
-        #     'score': 0,
-        #     'totalMarks': exam.totalQuestions * exam.marksPerQuestion,
-        #     'passingMarks': exam.passingMarks,
-        # }, status=status.HTTP_200_OK)
+        
+        if user_responses == []:
+            score=0
+            result_serializer = ResultSerializer(data={
+            'student': student.usn,
+            'exam': exam_id,
+            'totalMarks': exam.totalMarks,
+            'studentMarks': score,
+        })
+            return Response({
+            'score': score,
+            'totalMarks': exam.totalQuestions * exam.marksPerQuestion,
+            'passingMarks': exam.passingMarks,
+        }, status=status.HTTP_200_OK)
         
 
         score = 0

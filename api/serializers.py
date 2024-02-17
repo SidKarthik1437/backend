@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Department, User, Subject, Question, Exam, QuestionAssignment, Choice, StudentAnswers,Result
+from .models import *
 
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -102,11 +102,11 @@ class StudentExamSerializer(serializers.ModelSerializer):
         model = Exam
         fields = ['id', 'subject', 'start_time', 'end_time', 'department', 'semester', 'duration', 'is_published', 'datetime_published']
 
-# class QuestionAssignmentSerializer(serializers.ModelSerializer):
-#     assigned_questions = serializers.PrimaryKeyRelatedField(many=True, queryset=Question.objects.all())
-#     class Meta:
-#         model = QuestionAssignment
-#         fields = '__all__'
+class ExamSessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ExamSession
+        fields = '__all__'
+
 
 class QuestionAssignmentSerializer(serializers.ModelSerializer):
     assigned_questions = QuestionSerializer(many=True)
