@@ -21,6 +21,8 @@ urlpatterns = [
     path('exams/<int:pk>/start-session/', ExamViewSet.as_view({'post': 'start_session'}), name='start-exam-session'),
     path('exams/<int:pk>/end-session/', ExamViewSet.as_view({'post': 'end_session'}), name='end-exam-session'),
     path('exams/<int:pk>/active-sessions/', ExamViewSet.as_view({'get': 'active_sessions'}), name='retrieve-active-sessions'),
+    path('report-pdf/<int:exam_id>/', generate_pdf_report, name='generate_report'),
+    path('report-excel/<int:exam_id>/', generate_excel_report, name='generate_report'),
 ]
 
 urlpatterns += router.urls
