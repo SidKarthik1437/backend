@@ -13,6 +13,15 @@ from rest_framework.views import APIView
 from django.db.models import Subquery
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
+from django.http import HttpResponse
+from reportlab.pdfgen import canvas
+from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.platypus import Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate
+import pandas as pd
+import sqlite3
 class CreateUserView(APIView):
     def post(self, request, *args, **kwargs):
         User = get_user_model()
@@ -453,3 +462,76 @@ class StudentAnswers(APIView):
             'passingMarks': exam.passingMarks,
         }
         return Response(response_data, status=status.HTTP_200_OK)
+
+def generate_pdf_report(request, exam_id):
+    # Execute SQL query to retrieve data from your_table for a specific exam_id
+    conn = sqlite3.connect('db.sqlite3')  # Replace 'your_database.db' with the actual name of your SQLite database file
+    cursor = conn.cursor()
+
+    # Execute SQL query to retrieve data from the table for a specific exam_id
+    cursor.execute(f'SELECT student_id, studentMarks FROM api_result WHERE exam_id = {exam_id}')
+    data = cursor.fetchall()
+
+    # Close the database connection
+    conn.close()
+    
+    buffer = BytesIO()
+
+    # Set up the PDF document
+    pdf = SimpleDocTemplate(buffer, pagesize=letter)
+    pdf_title = f"Student Marks Report - Exam ID: {exam_id}"
+
+    # Rearrange table_data to include only specific columns and add column headings
+    table_data = [['Sl.no', 'Student ID', 'Marks']] + [
+        [i + 1, row[0], row[1]] for i, row in enumerate(data)
+    ]
+
+    # Define the style of the table
+    style = TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black)])
+
+    # Create the table and apply the style
+    table = Table(table_data, style=style)
+
+    # Add the table to the PDF
+    pdf_title += ""
+    pdf.build([table])
+
+    # Create a response with PDF content
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{pdf_title}.pdf"'
+    buffer.seek(0)
+    response.write(buffer.read())
+
+    return response
+
+def generate_excel_report(request, exam_id):
+    conn = sqlite3.connect('db.sqlite3')  # Replace 'your_database.db' with the actual name of your SQLite database file
+    cursor = conn.cursor()
+
+    # Execute SQL query to retrieve data from the table for a specific exam_id
+    cursor.execute(f'SELECT student_id, studentMarks FROM api_result WHERE exam_id = {exam_id}')
+    data = cursor.fetchall()
+
+    # Close the database connection
+    conn.close()
+    
+    
+ # Create a DataFrame from the retrieved data
+    columns = ['USN', 'Marks']
+    df = pd.DataFrame(data, columns=columns)
+
+    # Create an Excel writer using pandas
+    buffer = BytesIO()
+    df.to_excel(buffer, index=False, sheet_name='Student Marks')
+
+    # Create a response with Excel content
+    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="student_marks_report_exam_{exam_id}.xlsx"'
+
+    return response
