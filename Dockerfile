@@ -33,5 +33,5 @@ COPY entrypoint.sh /app/
 
 ENTRYPOINT ["sh","entrypoint.sh"]
 
-CMD ["gunicorn", "--workers=3", "--bind", "0.0.0.0:8000", "nexa.wsgi:application"]
+# CMD ["gunicorn", "--workers=3", "--bind", "0.0.0.0:8000", "nexa.wsgi:application"]
 # CMD [ "python", "manage.py", "runserver" ]
