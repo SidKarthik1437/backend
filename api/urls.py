@@ -8,6 +8,7 @@ router.register(r'exams', ExamViewSet, basename='exam')
 router.register(r'questions', QuestionViewSet, basename='question')
 router.register(r'choices', ChoiceViewSet, basename='choice')
 router.register(r'departments', DepartmentViewSet)
+router.register(r'users', UsersViewSet)
 
 # router.register(r'question-assignments', QuestionAssignmentViewSet, basename='question-assignment')
 
@@ -21,6 +22,7 @@ urlpatterns = [
     path('exams/<int:pk>/start-session/', ExamViewSet.as_view({'post': 'start_session'}), name='start-exam-session'),
     path('exams/<int:pk>/end-session/', ExamViewSet.as_view({'post': 'end_session'}), name='end-exam-session'),
     path('exams/<int:pk>/active-sessions/', ExamViewSet.as_view({'get': 'active_sessions'}), name='retrieve-active-sessions'),
+    # path('users/', UsersViewSet.as_view({'get': 'list'}), name='user-list'),
 ]
 
 urlpatterns += router.urls

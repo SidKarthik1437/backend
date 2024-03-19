@@ -1,5 +1,6 @@
 # Use the latest official Python image as the base image
 FROM python:latest
+EXPOSE 8000
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
