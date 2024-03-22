@@ -44,12 +44,6 @@
 pipeline {
     agent any  
 
-    stage('Checkout') {
-    steps {
-        git credentialsId: 'my-github-token', url: 'https://github.com/myorg/myrepo.git' 
-    }
-}
-
     stages {
         stage('Build Docker Image') {
             steps {
