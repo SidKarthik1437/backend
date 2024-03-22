@@ -53,6 +53,16 @@ pipeline {
             }
         }
 
+        stage('Make Migrations') {
+            steps {
+                script {
+                    docker.image('django-backend').inside { 
+                        sh 'python manage.py makemigrations'
+                    }
+                }
+            }
+        }
+
         stage('Run Migrations') {
             steps {
                 script {
