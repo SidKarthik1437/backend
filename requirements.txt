@@ -12,3 +12,5 @@ sqlparse==0.2.4
 tzdata==2023.3
 gunicorn==21.2.0
 reportlab==4.1.0
+pandas
+psycopg2-binary
