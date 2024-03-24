@@ -12,8 +12,9 @@ class Command(BaseCommand):
                     {'id': 4, 'name': 'Information Science and Engineering'},
                     {'id': 5, 'name': 'Electronics and Communication Engineering'},
                     {'id': 6, 'name': 'Electrical and Electronics Engineering'},
-                    {'id': 7, 'name': 'Aerospace Engineering'},
+                    {'id': 7, 'name': 'Aeronautical Engineering'},
                     {'id': 8, 'name': 'Mechanical Engineering'},
+                    {'id': 9, 'name': 'Civil Engineering'},
                 ]
 
 
