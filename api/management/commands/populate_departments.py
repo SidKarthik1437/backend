@@ -6,6 +6,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         departments = [
+                    {'id': 0, 'name': 'Admin'},
                     {'id': 1, 'name': 'Artificial Intelligence and Data Science'},
                     {'id': 2, 'name': 'Artificial Intelligence and Machine Learning'},
                     {'id': 3, 'name': 'Computer Science and Engineering'},
@@ -15,6 +16,7 @@ class Command(BaseCommand):
                     {'id': 7, 'name': 'Aeronautical Engineering'},
                     {'id': 8, 'name': 'Mechanical Engineering'},
                     {'id': 9, 'name': 'Civil Engineering'},
+                    {'id': 10, 'name': 'Computer Science & Engg. ( AI & ML)'},
                 ]
 
 
