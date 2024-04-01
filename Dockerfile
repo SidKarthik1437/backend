@@ -37,6 +37,7 @@
 # CMD [ "python", "manage.py", "runserver" ]
 
 FROM python:latest
+EXPOSE 8000
 
 WORKDIR /app
 

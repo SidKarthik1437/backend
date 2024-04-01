@@ -8,6 +8,7 @@ router.register(r'exams', ExamViewSet, basename='exam')
 router.register(r'questions', QuestionViewSet, basename='question')
 router.register(r'choices', ChoiceViewSet, basename='choice')
 router.register(r'departments', DepartmentViewSet)
+router.register(r'users', UsersViewSet)
 
 # router.register(r'question-assignments', QuestionAssignmentViewSet, basename='question-assignment')
 

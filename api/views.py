@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from django.db.models import Subquery
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
+
 from django.http import HttpResponse
 from reportlab.pdfgen import canvas
 from io import BytesIO
@@ -22,33 +23,68 @@ from reportlab.platypus import Table, TableStyle
 from reportlab.platypus import SimpleDocTemplate
 import pandas as pd
 import sqlite3
+
 class CreateUserView(APIView):
     def post(self, request, *args, **kwargs):
         User = get_user_model()
-        
-        usn = request.data.get('usn')
-        name = request.data.get('name')
-        dob = request.data.get('dob')
-        role = request.data.get('role')  # Default to STUDENT if role is not provided
-        
+        data = request.data
+        # Check if the request data is a list (for batch creation)
+        if isinstance(data, list):
+            users_created = []
+            errors = []
+            with transaction.atomic():
+                for index, item in enumerate(data):
+                    user_creation_result = self.create_user(item, User)
+                    if "error" in user_creation_result:
+                        errors.append({'index': index, 'error': user_creation_result["error"]})
+                    else:
+                        users_created.append(user_creation_result["user"])
+                if errors:
+                    return Response({'errors': errors, 'users_created': users_created}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'message': f'{len(users_created)} users created successfully', "users": users_created}, status=status.HTTP_201_CREATED)
+        else:
+            result = self.create_user(data, User)
+            if "error" in result:
+                return Response({'error': result["error"]}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'User created successfully', "user": result["user"]}, status=status.HTTP_201_CREATED)
+
+    def create_user(self, data, User):
+        usn = data.get('usn')
+        name = data.get('name')
+        dob = data.get('dob')
+        role = data.get('role')
+
         if not usn or not name or not dob:
             return Response({'error': 'USN, Name, and DOB are required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Parse dob string to datetime object
         try:
             dob = datetime.strptime(dob, '%Y-%m-%d').date()
         except ValueError:
             return Response({'error': 'Invalid DOB format, expected YYYY-MM-DD'}, status=status.HTTP_400_BAD_REQUEST)
         
+        department_name = data.get('department')
+        if department_name:
+            try:
+                department = Department.objects.get(name=department_name)
+            except Department.DoesNotExist:
+                {'error': f'Department with name {department_name} does not exist'}
+        else:
+            return {'error': 'Department name is required'}
+
         try:
-            if role == User.Role.STUDENT:
-                user = User.objects.create_user(usn=usn, name=name, dob=dob, role=role, semester=request.data.get('semester'), department=request.data.get('department'), password=request.data.get('password'))
-            else:
-                user = User.objects.create_user(usn=usn, name=name, dob=dob, role=role, password=request.data.get('password'))
+            user = User.objects.create_user(
+                usn=usn, 
+                name=name, 
+                dob=dob, 
+                role=role, 
+                semester=data.get('semester') if role == User.Role.STUDENT else None, 
+                department=department, 
+                password=data.get('password')
+            )
         except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        user = UserSerializer(user).data
-        return Response({'message': 'User created successfully', "user": user}, status=status.HTTP_201_CREATED)
+            return {'error': str(e)}
+
+        return {'user': UserSerializer(user).data}
 
 class CustomLoginView(APIView):
     def post(self, request, *args, **kwargs):
@@ -462,6 +498,42 @@ class StudentAnswers(APIView):
             'passingMarks': exam.passingMarks,
         }
         return Response(response_data, status=status.HTTP_200_OK)
+    
+class UsersViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    
+    def create(self, request, *args, **kwargs):
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = UserSerializer(instance, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def list(self, request, *args, **kwargs):
+        queryset = User.objects.all()
+        serializer = UserSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = UserSerializer(instance)
+        return Response(serializer.data)
 
 def generate_pdf_report(request, exam_id):
     # Execute SQL query to retrieve data from your_table for a specific exam_id

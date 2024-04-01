@@ -10,7 +10,7 @@ class UserSerializer(serializers.ModelSerializer):
     department = DepartmentSerializer()
     class Meta:
         model = User
-        fields = ['usn', 'name', 'department','semester','role']
+        fields = ['usn', 'name', 'department','semester','role', 'dob']
         
 class SubjectSerializer(serializers.ModelSerializer):
     
