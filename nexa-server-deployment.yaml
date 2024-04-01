@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexa-server
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nexa-server
+  template:
+    metadata:
+      labels:
+        app: nexa-server
+    spec:
+      containers:
+        - name: nexa-server
+          image: nexa-server
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DB_HOST
+              value: db
+            - name: DB_NAME
+              value: nexa
+            - name: DB_USER
+              value: admin
+            - name: DB_PASSWORD
+              value: admin

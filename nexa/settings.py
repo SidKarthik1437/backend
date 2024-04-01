@@ -25,8 +25,8 @@ SECRET_KEY = "django-insecure--_gw$(hm-08bfe#8_n6(oa!yv%b0h=d3s33a(vzo_*wy-%!f67
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.248.207', '192.168.248.111', '0.0.0.0', 'nexa-server.azurewebsites.net', 'https://nexa-server.azurewebsites.net', '192.168.1.15']
-CSRF_TRUSTED_ORIGINS = ['https://nexa-server.azurewebsites.net']
+ALLOWED_HOSTS = ['nexa.gat.ac.in', '223.30.41.90', 'localhost', '192.168.0.230' ,'127.0.0.1', '0.0.0.0', 'nexa-server.azurewebsites.net', 'https://nexa-server.azurewebsites.net', '192.168.1.15', '192.168.0.101']
+CSRF_TRUSTED_ORIGINS = ['https://nexa-server.azurewebsites.net', 'http://nexa.gat.ac.in']
 
 # Application definition
 
@@ -78,10 +78,21 @@ WSGI_APPLICATION = "nexa.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
+# }
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'nexa', 
+        'USER': 'admin',
+        'PASSWORD': 'admin',
+        'HOST': 'db', 
+        'PORT': '5432',
     }
 }
 
