@@ -22,6 +22,7 @@ from reportlab.lib import colors
 from reportlab.platypus import Table, TableStyle
 from reportlab.platypus import SimpleDocTemplate
 import pandas as pd
+from django.db.models import Q
 import sqlite3
 
 class CreateUserView(APIView):
@@ -35,6 +36,7 @@ class CreateUserView(APIView):
             with transaction.atomic():
                 for index, item in enumerate(data):
                     user_creation_result = self.create_user(item, User)
+                    print(user_creation_result)
                     if "error" in user_creation_result:
                         errors.append({'index': index, 'error': user_creation_result["error"]})
                     else:
@@ -238,11 +240,16 @@ class ExamViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.Role.STUDENT:
-            # Subquery to get the exams the student has attempted
-            attempted_exams = Result.objects.filter(student=user).values('exam')
-            # Filter the exams queryset to exclude attempted exams and those whose end time has passed
+            # Get the semester of the current user
+            user_semester = user.semester
+            # Filter the exams queryset to include exams related to the user's semester
+            # and those whose end time has not passed
             now = timezone.now()
-            return Exam.objects.exclude(id__in=Subquery(attempted_exams)).filter(end_time__gt=now)
+            exams = Exam.objects.filter(semester=user_semester, end_time__gt=now, is_published=True)
+            # Filter the attempted exams for the current user
+            attempted_exams = Result.objects.filter(student=user).values_list('exam', flat=True)
+            # Exclude attempted exams from the queryset
+            return exams.exclude(id__in=attempted_exams)
         elif user.role == User.Role.ADMIN:
             return Exam.objects.all()
         else:

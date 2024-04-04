@@ -67,8 +67,8 @@ class User(AbstractUser):
         
     base_role = Role.ADMIN
 
-    usn = models.CharField(max_length=10, unique=True, primary_key=True )
-    name = models.CharField(max_length=50)
+    usn = models.CharField(max_length=12, unique=True, primary_key=True )
+    name = models.CharField(max_length=100)
     department = models.ForeignKey(Department, on_delete=models.CASCADE, null=True, blank=True, default=None)
     role = models.CharField(max_length=10, choices=Role.choices, default=base_role)
     dob = models.DateField(null=True, blank=True)
