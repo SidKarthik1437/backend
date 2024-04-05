@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure--_gw$(hm-08bfe#8_n6(oa!yv%b0h=d3s33a(vzo_*wy-%!f67
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['nexa.gat.ac.in', '223.30.41.90', 'localhost', '192.168.0.230' ,'127.0.0.1', '0.0.0.0', 'nexa-server.azurewebsites.net', 'https://nexa-server.azurewebsites.net', '192.168.1.15', '192.168.0.101']
+ALLOWED_HOSTS = ['nexa.gat.ac.in', '223.30.41.90', 'localhost', '192.168.0.230' ,'127.0.0.1', '0.0.0.0', 'nexa-server.azurewebsites.net', 'https://nexa-server.azurewebsites.net', '192.168.1.11', '192.168.0.101']
 CSRF_TRUSTED_ORIGINS = ['https://nexa-server.azurewebsites.net', 'http://nexa.gat.ac.in']
 
 # Application definition
@@ -88,10 +88,10 @@ WSGI_APPLICATION = "nexa.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'nexa', 
+        'NAME': 'Nexa', 
         'USER': 'admin',
         'PASSWORD': 'admin',
-        'HOST': 'db', 
+        'HOST': 'localhost', 
         'PORT': '5432',
     }
 }

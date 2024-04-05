@@ -23,7 +23,6 @@ from reportlab.platypus import Table, TableStyle
 from reportlab.platypus import SimpleDocTemplate
 import pandas as pd
 from django.db.models import Q
-import sqlite3
 
 class CreateUserView(APIView):
     def post(self, request, *args, **kwargs):
@@ -240,14 +239,14 @@ class ExamViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.Role.STUDENT:
-            # Get the semester of the current user
             user_semester = user.semester
-            # Filter the exams queryset to include exams related to the user's semester
-            # and those whose end time has not passed
             now = timezone.now()
             exams = Exam.objects.filter(semester=user_semester, end_time__gt=now, is_published=True)
             # Filter the attempted exams for the current user
-            attempted_exams = Result.objects.filter(student=user).values_list('exam', flat=True)
+            attempted_exams = Result.objects.filter(student=user)
+            print(user_semester)
+            print(exams)
+            print(attempted_exams)
             # Exclude attempted exams from the queryset
             return exams.exclude(id__in=attempted_exams)
         elif user.role == User.Role.ADMIN:
@@ -542,75 +541,57 @@ class UsersViewSet(viewsets.ModelViewSet):
         serializer = UserSerializer(instance)
         return Response(serializer.data)
 
-def generate_pdf_report(request, exam_id):
-    # Execute SQL query to retrieve data from your_table for a specific exam_id
-    conn = sqlite3.connect('db.sqlite3')  # Replace 'your_database.db' with the actual name of your SQLite database file
-    cursor = conn.cursor()
+class ReportViewSet(viewsets.ModelViewSet):
+    @action(detail=True, methods=['get'])
+    def generate_pdf_report(self,request, pk):
+        data = Result.objects.filter(exam_id=pk).values_list('student_id', 'studentMarks')
 
-    # Execute SQL query to retrieve data from the table for a specific exam_id
-    cursor.execute(f'SELECT student_id, studentMarks FROM api_result WHERE exam_id = {exam_id}')
-    data = cursor.fetchall()
+        buffer = BytesIO()
+        pdf = SimpleDocTemplate(buffer, pagesize=letter)
+        pdf_title = f"Student Marks Report - Exam ID: {pk}"
+        table_data = [['Sl.no', 'Student ID', 'Marks']] + [
+            [i + 1, row[0], row[1]] for i, row in enumerate(data)
+        ]
 
-    # Close the database connection
-    conn.close()
-    
-    buffer = BytesIO()
+        style = TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                            ('GRID', (0, 0), (-1, -1), 1, colors.black)])
+        table = Table(table_data, style=style)
 
-    # Set up the PDF document
-    pdf = SimpleDocTemplate(buffer, pagesize=letter)
-    pdf_title = f"Student Marks Report - Exam ID: {exam_id}"
+        pdf_title += ""
+        pdf.build([table])
 
-    # Rearrange table_data to include only specific columns and add column headings
-    table_data = [['Sl.no', 'Student ID', 'Marks']] + [
-        [i + 1, row[0], row[1]] for i, row in enumerate(data)
-    ]
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{pdf_title}.pdf"'
+        buffer.seek(0)
+        response.write(buffer.read())
 
-    # Define the style of the table
-    style = TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                        ('GRID', (0, 0), (-1, -1), 1, colors.black)])
+        return response
+    @action(detail=True, methods=['get'])
+    def generate_excel_report(self, request, pk):
+        # Fetch data from the database
+        data = Result.objects.filter(exam_id=pk).values_list('student_id', 'studentMarks')
 
-    # Create the table and apply the style
-    table = Table(table_data, style=style)
+        # Convert data to DataFrame
+        columns = ['USN', 'Marks']
+        df = pd.DataFrame(data, columns=columns)
 
-    # Add the table to the PDF
-    pdf_title += ""
-    pdf.build([table])
+        # Create a BytesIO buffer to write Excel file
+        buffer = BytesIO()
 
-    # Create a response with PDF content
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="{pdf_title}.pdf"'
-    buffer.seek(0)
-    response.write(buffer.read())
+        # Write DataFrame to Excel buffer
+        df.to_excel(buffer, index=False, sheet_name='Student Marks')
 
-    return response
+        # Set the cursor to the beginning of the buffer
+        buffer.seek(0)
 
-def generate_excel_report(request, exam_id):
-    conn = sqlite3.connect('db.sqlite3')  # Replace 'your_database.db' with the actual name of your SQLite database file
-    cursor = conn.cursor()
+        # Prepare HTTP response with the Excel file
+        response = HttpResponse(content_type='application/vnd.ms-excel')
+        response['Content-Disposition'] = f'attachment; filename="student_marks_report_exam_{pk}.xlsx"'
+        response.write(buffer.getvalue())
 
-    # Execute SQL query to retrieve data from the table for a specific exam_id
-    cursor.execute(f'SELECT student_id, studentMarks FROM api_result WHERE exam_id = {exam_id}')
-    data = cursor.fetchall()
-
-    # Close the database connection
-    conn.close()
-    
-    
- # Create a DataFrame from the retrieved data
-    columns = ['USN', 'Marks']
-    df = pd.DataFrame(data, columns=columns)
-
-    # Create an Excel writer using pandas
-    buffer = BytesIO()
-    df.to_excel(buffer, index=False, sheet_name='Student Marks')
-
-    # Create a response with Excel content
-    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename="student_marks_report_exam_{exam_id}.xlsx"'
-
-    return response
+        return response
