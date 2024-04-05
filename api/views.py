@@ -14,7 +14,7 @@ from django.db.models import Subquery
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 
-from django.http import HttpResponse
+from django.http import FileResponse, HttpResponse
 from reportlab.pdfgen import canvas
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
@@ -590,8 +590,8 @@ class ReportViewSet(viewsets.ModelViewSet):
         buffer.seek(0)
 
         # Prepare HTTP response with the Excel file
-        response = HttpResponse(content_type='application/vnd.ms-excel')
-        response['Content-Disposition'] = f'attachment; filename="student_marks_report_exam_{pk}.xlsx"'
-        response.write(buffer.getvalue())
+        response = FileResponse(buffer, as_attachment=True, filename=f'student_marks_report_exam_{pk}.xlsx')
+        # response['Content-Disposition'] = f'attachment; filename="student_marks_report_exam_{pk}.xlsx"'
+        # response.write(buffer.getvalue())
 
         return response
