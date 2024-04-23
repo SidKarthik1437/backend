@@ -243,12 +243,14 @@ class ExamViewSet(viewsets.ModelViewSet):
             now = timezone.now()
             exams = Exam.objects.filter(semester=user_semester, end_time__gt=now, is_published=True)
             # Filter the attempted exams for the current user
-            attempted_exams = Result.objects.filter(student=user)
-            print(user_semester)
+            # attempted_exams = Result.objects.filter(student=user)
+            attempted_exam_ids = Result.objects.filter(student=user).values_list('exam_id', flat=True) 
+            # print(user_semester)
             print(exams)
-            print(attempted_exams)
+            # print('attempted', attempted_exams)
+            print('attempted', exams.exclude(id__in=attempted_exam_ids) )
             # Exclude attempted exams from the queryset
-            return exams.exclude(id__in=attempted_exams)
+            return exams.exclude(id__in=attempted_exam_ids)
         elif user.role == User.Role.ADMIN:
             return Exam.objects.all()
         else:
