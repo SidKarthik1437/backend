@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,13 +21,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure--_gw$(hm-08bfe#8_n6(oa!yv%b0h=d3s33a(vzo_*wy-%!f67"
+SECRET_KEY = os.environ.get("SECRET_KEY", 'my_default_secret_key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['nexa.gat.ac.in', '223.30.41.90', 'localhost', '192.168.0.230' ,'127.0.0.1', '0.0.0.0', 'nexa-server.azurewebsites.net', 'https://nexa-server.azurewebsites.net', '192.168.1.10', '192.168.0.101']
-CSRF_TRUSTED_ORIGINS = ['https://nexa-server.azurewebsites.net', 'http://nexa.gat.ac.in']
+CSRF_TRUSTED_ORIGINS = ['https://nexa-server.azurewebsites.net', 'https://nexa.gat.ac.in']
 
 # Application definition
 
@@ -88,10 +89,10 @@ WSGI_APPLICATION = "nexa.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'Nexa', 
+        'NAME': 'nexa', 
         'USER': 'admin',
         'PASSWORD': 'admin',
-        'HOST': 'localhost', 
+        'HOST': 'db', 
         'PORT': '5432',
     }
 }
@@ -159,4 +160,4 @@ import os
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DATA_UPLOAD_MAX_MEMORY_SIZE = 20971520  # 20 * 1024 * 1024 bytes
-STATIC_ROOT = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, '/static/')
