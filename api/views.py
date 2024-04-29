@@ -293,9 +293,9 @@ class QuestionViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         queryset = Question.objects.all()
-        subject_id = self.request.query_params.get('subject', None)
-        if subject_id is not None:
-            queryset = queryset.filter(subject__id=subject_id)
+        exam_id = self.request.query_params.get('exam', None)
+        if exam_id is not None:
+            queryset = queryset.filter(exam__id=exam_id)
         return queryset
     
     def create(self, request, *args, **kwargs):
